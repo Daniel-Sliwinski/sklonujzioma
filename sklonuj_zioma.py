@@ -14,7 +14,9 @@ api_keys_pass = os.environ.get('API_KEYS_PASS')
 # Add to secrets as well
 username = "sklonujzioma"
 
-api_keys = requests.get(url, auth=HTTPBasicAuth(username, api_keys_pass)).json()
+def get_keys():
+    return requests.get(url, auth=HTTPBasicAuth(username, api_keys_pass)).json()
+api_keys = get_keys()
 
 # Constants
 SUPABASE_SERVICE_KEY = api_keys.get('supabaseServiceKey')
