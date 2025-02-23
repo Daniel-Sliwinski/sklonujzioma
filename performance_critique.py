@@ -2,12 +2,10 @@ import io
 import json
 from jinja2 import Template
 import pandas as pd
-
 from pydantic import BaseModel
 from openai import OpenAI
 from supabase import create_client
 from elevenlabs import ElevenLabs
-
 from .sklonuj_zioma import get_keys
 
 #TODO - these two should be arguments given as input to the script
@@ -19,7 +17,6 @@ supabase = create_client('https://coltpedcrfibsozxvgvu.supabase.co', KEYS["supab
 eleven_labs_client = ElevenLabs(api_key=KEYS["elevenLabs"])
 open_ai_client = OpenAI(api_key=KEYS["openai"])
 
-# %%
 # GETTING THE CONVERSATION 
 conversation = eleven_labs_client.conversational_ai.get_conversation(
     conversation_id=CONVERSATION_ID
@@ -35,7 +32,6 @@ response = (
     )
 )
 
-# %%
 # EXTRACTING INFO FROM THE CONVERSATION
 dynamic_variables = conversation.dict()['conversation_initiation_client_data']['dynamic_variables']
 
@@ -53,7 +49,6 @@ SCREENPLAY_TEXT = dynamic_variables["screenplay_text"]
 USER_ROLE = dynamic_variables["user_role"]
 AGENT_ROLE = dynamic_variables["agent_role"]
 
-# %%
 # EXTRACTING TRANSCRIPTION FROM THE CONVERSATION
 duration = conversation.dict()['metadata']['call_duration_secs']
 
@@ -62,7 +57,6 @@ transcript['role'] = transcript['role'].apply(lambda x: x.upper())
 transcript['role'] = transcript['role'].apply(lambda x: "ACTOR" if x == "USER" else x)
 transcript['time_in_call_secs_end'] = transcript['time_in_call_secs'].shift(-1).fillna(duration).astype(int)
 
-# %%
 # AUDIO
 response = (
     supabase.table("audio_emotions")
@@ -73,7 +67,7 @@ response = (
 audio_emotions = pd.DataFrame(response.data)
 audio_emotions["start_time"] = audio_emotions["start_time"] / 1000
 audio_emotions["end_time"] = audio_emotions["end_time"] / 1000
-# %%
+
 # VIDEO
 def _timestamp_to_seconds(timestamp: str) -> float:
     hh, mm, ss, ms = map(int, timestamp.split(":"))
@@ -106,7 +100,6 @@ for _, line in transcript.iterrows():
     sorted_emotions = sorted(emotions, key=emotions.get, reverse=True)  
     video_emotions_per_line.append(', '.join(sorted_emotions))
 
-# %%
 # JOINING EMOTIONS TO TRANSCRIPT
 # VIDEO
 transcript = pd.concat([transcript,pd.DataFrame({"video_emotions":video_emotions_per_line})], axis=1)
@@ -115,7 +108,6 @@ transcript = pd.concat([transcript,pd.DataFrame({"voice_emotions":video_emotions
 
 TRANSCRIPT = "\n".join([f"{line["role"]}: {line["message"]} (Vision: {line["video_emotions"]} ; Voice: {line["voice_emotions"]})" for _, line in transcript.iterrows()])
 
-# %%
 # PERSONALITY
 response = (
     supabase.table("personality")
@@ -128,7 +120,6 @@ personality = pd.DataFrame(response.data)
 personality_values = personality.drop(columns=['id','video_id']).to_dict(orient='records')[0]
 PERSONALITY = f"Extraversion: {personality_values['extraversion']*100:.0f}%, Neuroticism: {personality_values['neuroticism']*100:.0f}%, Agreeableness: {personality_values['agreeableness']*100:.0f}%, Conscientiousness: {personality_values['conscientiousness']*100:.0f}%, Openness: {personality_values['openness']*100:.0f}%"
 
-# %%
 # PROMPTING FOR CRITIQUE
 developer_prompt = supabase.storage.from_("utils").download("/prompt_templates/developer.txt").decode("utf-8")
 
