@@ -106,7 +106,7 @@ transcript = pd.concat([transcript,pd.DataFrame({"video_emotions":video_emotions
 #TODO - implement the connection by sentence
 transcript = pd.concat([transcript,pd.DataFrame({"voice_emotions":video_emotions_per_line})], axis=1)
 
-TRANSCRIPT = "\n".join([f"{line["role"]}: {line["message"]} (Vision: {line["video_emotions"]} ; Voice: {line["voice_emotions"]})" for _, line in transcript.iterrows()])
+TRANSCRIPT = "\n".join([f"{line['role']}: {line['message']} (Vision: {line['video_emotions']} ; Voice: {line['voice_emotions']})" for _, line in transcript.iterrows()])
 
 # PERSONALITY
 response = (
